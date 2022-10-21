@@ -1,4 +1,5 @@
 import logging
+
 import numpy as np
 
 LOGGER = logging.getLogger(__name__)
@@ -9,26 +10,28 @@ class LinearMaxregressor:
     Fit the LinearMaxregressor
     """
 
-    def __init__(self, method="normal equation", include_constant=True):
+    def __init__(self, method="ols", include_constant=True):
         self.method = method
         self.include_constant = include_constant
 
     def _calculate_coeffients(self, X, y):
         LOGGER.info(f"[LinearMaxregressor] Using the {self.method} method")
-        if self.method == "normal equation":
+        if self.method == "ols":
             self.coefficients_ = np.linalg.inv(X.T @ X) @ (X.T @ y)
 
-        if self.method == "svd":
+        elif self.method == "svd":
             # Use SVD
-            U, S, Vt = np.linalg.svd(X.T @ X)
+            U, Sigma, Vt = np.linalg.svd(X.T @ X)
             V = Vt.T
-            # Get Moore-Penrose pseudoinverse of S
-            S_pinv = np.linalg.pinv(np.diag(S))
-            self.coefficients_ = np.array(V @ S_pinv @ U.T @ X.T @ y)
+            # Get Moore-Penrose pseudoinverse of X squared
+            Sigma_pinv = np.linalg.pinv(np.diag(Sigma))
+            X_squared_pinv = V @ Sigma_pinv @ U.T
+            self.coefficients_ = np.array(X_squared_pinv @ X.T @ y)
 
         else:
             LOGGER.error(
-                f"""[LinearMaxregressor] Specified method "{self.method}" is not known."""
+                f"""[LinearMaxregressor] Specified method "
+                {self.method}" is not known."""
             )
 
         LOGGER.info(f"[LinearMaxregressor] Coefficients are {self.coefficients_}")
@@ -50,7 +53,9 @@ class LinearMaxregressor:
 
     def predict(self, X):
         if self.coefficients_ is None:
-            LOGGER.error("[LinearMaxregressor] Model not fit yet. Call fit to fit the model.")
+            LOGGER.error(
+                "[LinearMaxregressor] Model not fit yet. Call fit to fit the model."
+            )
 
         yhat = X @ self.coefficients_
 
