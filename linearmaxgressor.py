@@ -13,6 +13,7 @@ class LinearMaxregressor:
     def __init__(self, method="ols", include_constant=True):
         self.method = method
         self.include_constant = include_constant
+        self.constant_ = None
 
     def _calculate_coeffients(self, X, y):
         LOGGER.info(f"[LinearMaxregressor] Using the {self.method} method")
@@ -50,6 +51,7 @@ class LinearMaxregressor:
 
         if self.include_constant:
             self._calculate_constant(X, y)
+        LOGGER.info("[LinearMaxregressor] Fitting finished")
 
     def predict(self, X):
         if self.coefficients_ is None:

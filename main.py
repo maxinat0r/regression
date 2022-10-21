@@ -25,10 +25,10 @@ if __name__ == "__main__":
     feature_data = df[feature_selection]
     target_data = df[target_selection]
 
-    regressor_ols = LinearMaxregressor(method="ols")
+    regressor_ols = LinearMaxregressor(method="ols", include_constant=True)
     regressor_ols.fit(X=feature_data, y=target_data)
 
-    regressor_svd = LinearMaxregressor(method="svd")
+    regressor_svd = LinearMaxregressor(method="svd", include_constant=True)
     regressor_svd.fit(X=feature_data, y=target_data)
 
     y_hat_ols = regressor_ols.predict(X=feature_data)
