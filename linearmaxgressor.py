@@ -10,31 +10,33 @@ class LinearMaxregressor:
     Fit the LinearMaxregressor
     """
 
-    def __init__(self, method="ols", include_constant=True):
+    def __init__(self, method="ols", include_constant=True, alpha=1):
         self.method = method
         self.include_constant = include_constant
+        self.alpha = alpha
         self.constant_ = None
 
-    def _calculate_coeffients(self, X, y):
-        LOGGER.info(f"[LinearMaxregressor] Using the {self.method} method")
-        if self.method == "ols":
-            self.coefficients_ = np.linalg.inv(X.T @ X) @ (X.T @ y)
+    def _calculate_coeffieciets_svd(self, X, y):
+        # Use SVD
+        U, Sigma, Vt = np.linalg.svd(X.T @ X)
+        V = Vt.T
+        # Get Moore-Penrose pseudoinverse of X squared
+        Sigma_pinv = np.linalg.pinv(np.diag(Sigma))
+        X_squared_pinv = V @ Sigma_pinv @ U.T
+        self.coefficients_ = np.array(X_squared_pinv @ X.T @ y)
 
-        elif self.method == "svd":
-            # Use SVD
-            U, Sigma, Vt = np.linalg.svd(X.T @ X)
-            V = Vt.T
-            # Get Moore-Penrose pseudoinverse of X squared
-            Sigma_pinv = np.linalg.pinv(np.diag(Sigma))
-            X_squared_pinv = V @ Sigma_pinv @ U.T
-            self.coefficients_ = np.array(X_squared_pinv @ X.T @ y)
+    def _calculate_coefficients_svdl2(self, X, y):
+        U, Sigma, Vt = np.linalg.svd(X, full_matrices=False)
+        V = Vt.T
 
-        else:
-            LOGGER.error(
-                f"""[LinearMaxregressor] Specified method "
-                {self.method}" is not known."""
-            )
+        denominator = Sigma**2 + self.alpha
+        d = np.divide(
+            Sigma, denominator, out=np.zeros_like(Sigma), where=denominator != 0
+        )
+        self.coefficients_ = np.array(d * (U.T @ y) @ V.T)
 
+    def _calculate_coefficients_ols(self, X, y):
+        self.coefficients_ = np.linalg.inv(X.T @ X) @ (X.T @ y)
         LOGGER.info(f"[LinearMaxregressor] Coefficients are {self.coefficients_}")
 
     def _calculate_constant(self, X, y):
@@ -45,12 +47,25 @@ class LinearMaxregressor:
         """
         Fit the LinearMaxregressor
         """
-
-        LOGGER.info("[LinearMaxregressor] Fitting started")
-        self._calculate_coeffients(X, y)
+        if self.method not in ("ols", "svd", "svdl2"):
+            raise ValueError(
+                f"""Known methods are "ols", "svd", "svdl2". Got "{self.method}"."""
+            )
+        if self.method == "ols":
+            self._calculate_coefficients_ols(X, y)
+        elif self.method == "svd":
+            self._calculate_coefficients_svd(X, y)
+        elif self.method == "svdl2":
+            self._calculate_coefficients_svdl2(X, y)
+        else:
+            LOGGER.error(
+                f"""[LinearMaxregressor] Specified method "
+                {self.method}" is not known."""
+            )
 
         if self.include_constant:
             self._calculate_constant(X, y)
+
         LOGGER.info("[LinearMaxregressor] Fitting finished")
 
     def predict(self, X):
