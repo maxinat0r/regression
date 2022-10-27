@@ -27,11 +27,9 @@ class LinearMaxregressor:
 
     def _calculate_coefficients_svd_l2(self, X, y):
         U, Sigma, Vt = np.linalg.svd(X, full_matrices=False)
-        V = Vt.T
-
         denominator = Sigma ** 2 + self.alpha
         d = np.divide(Sigma, denominator, out=np.zeros_like(Sigma), where=denominator != 0)
-        self.coefficients_ = np.array(d * (U.T @ y) @ V.T)
+        self.coefficients_ = np.array(d * (U.T @ y) @ Vt)
 
     def _calculate_coefficients_ols(self, X, y):
         self.coefficients_ = np.linalg.inv(X.T @ X) @ (X.T @ y)
