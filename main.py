@@ -28,16 +28,28 @@ if __name__ == "__main__":
     regressor_ols = LinearMaxregressor(method="ols", include_constant=True)
     regressor_ols.fit(X=feature_data, y=target_data)
 
-    regressor_svd = LinearMaxregressor(method="svd", include_constant=True)
+    regressor_svd = LinearMaxregressor(
+        method="svd", include_constant=True
+    )
     regressor_svd.fit(X=feature_data, y=target_data)
 
+    regressor_svd_l2 = LinearMaxregressor(
+        method="svd_l2", include_constant=True, alpha=1
+    )
+    regressor_svd_l2.fit(X=feature_data, y=target_data)
+
     y_hat_ols = regressor_ols.predict(X=feature_data)
-    y_hat_svd = regressor_ols.predict(X=feature_data)
+    y_hat_svd = regressor_svd.predict(X=feature_data)
+    y_hat_svd_l2 = regressor_svd_l2.predict(X=feature_data)
 
     LOGGER.info(
         f"[OLS] Mean Absolute error is {mean_absolute_error(target_data, y_hat_ols)}"
     )
 
     LOGGER.info(
-        f"[SVD] Mean Absolute error is {mean_absolute_error(target_data, y_hat_ols)}"
+        f"[SVD] Mean Absolute error is {mean_absolute_error(target_data, y_hat_svd)}"
+    )
+
+    LOGGER.info(
+        f"[SVD L2] Mean Absolute error is {mean_absolute_error(target_data, y_hat_svd_l2)}"
     )

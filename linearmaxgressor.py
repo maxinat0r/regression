@@ -16,7 +16,7 @@ class LinearMaxregressor:
         self.alpha = alpha
         self.constant_ = None
 
-    def _calculate_coeffieciets_svd(self, X, y):
+    def _calculate_coefficients_svd(self, X,y):
         # Use SVD
         U, Sigma, Vt = np.linalg.svd(X.T @ X)
         V = Vt.T
@@ -25,14 +25,12 @@ class LinearMaxregressor:
         X_squared_pinv = V @ Sigma_pinv @ U.T
         self.coefficients_ = np.array(X_squared_pinv @ X.T @ y)
 
-    def _calculate_coefficients_svdl2(self, X, y):
+    def _calculate_coefficients_svd_l2(self, X, y):
         U, Sigma, Vt = np.linalg.svd(X, full_matrices=False)
         V = Vt.T
 
-        denominator = Sigma**2 + self.alpha
-        d = np.divide(
-            Sigma, denominator, out=np.zeros_like(Sigma), where=denominator != 0
-        )
+        denominator = Sigma ** 2 + self.alpha
+        d = np.divide(Sigma, denominator, out=np.zeros_like(Sigma), where=denominator != 0)
         self.coefficients_ = np.array(d * (U.T @ y) @ V.T)
 
     def _calculate_coefficients_ols(self, X, y):
@@ -47,16 +45,17 @@ class LinearMaxregressor:
         """
         Fit the LinearMaxregressor
         """
-        if self.method not in ("ols", "svd", "svdl2"):
+        known_methods = ["ols", "svd", "svd_l2"]
+        if self.method not in (known_methods):
             raise ValueError(
-                f"""Known methods are "ols", "svd", "svdl2". Got "{self.method}"."""
+               f"""Known methods are {known_methods}. Got "{self.method}"."""
             )
         if self.method == "ols":
             self._calculate_coefficients_ols(X, y)
         elif self.method == "svd":
             self._calculate_coefficients_svd(X, y)
-        elif self.method == "svdl2":
-            self._calculate_coefficients_svdl2(X, y)
+        elif self.method == "svd_l2":
+            self._calculate_coefficients_svd_l2(X, y)
         else:
             LOGGER.error(
                 f"""[LinearMaxregressor] Specified method "
