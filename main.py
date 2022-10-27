@@ -34,7 +34,7 @@ if __name__ == "__main__":
     regressor_svd.fit(X=feature_data, y=target_data)
 
     regressor_svd_l2 = LinearMaxregressor(
-        method="svd_l2", include_constant=True, alpha=1
+        method="svd_l2", include_constant=True, alpha=25000
     )
     regressor_svd_l2.fit(X=feature_data, y=target_data)
 
@@ -45,11 +45,20 @@ if __name__ == "__main__":
     LOGGER.info(
         f"[OLS] Mean Absolute error is {mean_absolute_error(target_data, y_hat_ols)}"
     )
+    LOGGER.info(
+        f"[OLS] Coefficients {regressor_ols.coefficients_}"
+    )
 
     LOGGER.info(
         f"[SVD] Mean Absolute error is {mean_absolute_error(target_data, y_hat_svd)}"
     )
+    LOGGER.info(
+        f"[SVD] Coefficients {regressor_svd.coefficients_}"
+    )
 
     LOGGER.info(
         f"[SVD L2] Mean Absolute error is {mean_absolute_error(target_data, y_hat_svd_l2)}"
+    )
+    LOGGER.info(
+        f"[SVD] Coefficients {regressor_svd_l2.coefficients_}"
     )
