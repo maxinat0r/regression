@@ -18,8 +18,7 @@ class LinearMaxregressor:
 
     def _calculate_coefficients_svd(self, X, y):
         # Use Singular Value Decomposition to split the X matrix into three components
-        # U and Vt are orthogonal matrices
-        # Sigma is a rectangular diagonal matrix with non-negative real numbers on the diagonal
+        # The returned Sigma is a vector containing only the diagonals
         U, Sigma, Vt = np.linalg.svd(X, full_matrices=False)
 
         # Get Moore-Penrose pseudoinverse of Sigma by dividing 1 by Sigma, returning 0 when Sigma is 0.
