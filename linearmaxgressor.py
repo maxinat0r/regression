@@ -27,8 +27,10 @@ class LinearMaxregressor:
 
         self.coefficients_ = Sigma_pinv * (U.T @ y) @ Vt
 
-    def _calculate_coefficients_svd_l2(self, X, y):
+    def _calculate_coefficients_ridge_svd(self, X, y):
         """
+        Linear Regression with L2 regularization, also known as Ridge.
+
         Use Singular Value Decomposition to minimize the following objective function:
 
         ||y - X*Beta||^2_2 + alpha * ||Beta||^2_2
@@ -91,8 +93,8 @@ class LinearMaxregressor:
             self._calculate_coefficients_ols(X, y)
         elif self.method == "svd":
             self._calculate_coefficients_svd(X, y)
-        elif self.method == "svd_l2":
-            self._calculate_coefficients_svd_l2(X, y)
+        elif self.method == "ridge_svd":
+            self._calculate_coefficients_ridge_svd(X, y)
         else:
             LOGGER.error(
                 f"""[LinearMaxregressor] Specified method "

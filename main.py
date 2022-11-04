@@ -33,32 +33,32 @@ if __name__ == "__main__":
     )
     regressor_svd.fit(X=feature_data, y=target_data)
 
-    regressor_svd_l2 = LinearMaxregressor(
-        method="svd_l2", include_constant=True, alpha=25000
+    regressor_ridge_svd = LinearMaxregressor(
+        method="regressor_ridge_svd", include_constant=True, alpha=25000
     )
-    regressor_svd_l2.fit(X=feature_data, y=target_data)
+    regressor_ridge_svd.fit(X=feature_data, y=target_data)
 
     y_hat_ols = regressor_ols.predict(X=feature_data)
     y_hat_svd = regressor_svd.predict(X=feature_data)
-    y_hat_svd_l2 = regressor_svd_l2.predict(X=feature_data)
+    y_hat_ridge_svd = regressor_ridge_svd.predict(X=feature_data)
 
     LOGGER.info(
-        f"[OLS] Mean Absolute error is {mean_absolute_error(target_data, y_hat_ols)}"
+        f"[OLS] Mean Absolute error is {mean_absolute_error(target_data, y_hat_ols):3f}"
     )
     LOGGER.info(
         f"[OLS] Coefficients {regressor_ols.coefficients_}"
     )
 
     LOGGER.info(
-        f"[SVD] Mean Absolute error is {mean_absolute_error(target_data, y_hat_svd)}"
+        f"[SVD] Mean Absolute error is {mean_absolute_error(target_data, y_hat_svd):3f}"
     )
     LOGGER.info(
         f"[SVD] Coefficients {regressor_svd.coefficients_}"
     )
 
     LOGGER.info(
-        f"[SVD L2] Mean Absolute error is {mean_absolute_error(target_data, y_hat_svd_l2)}"
+        f"[Ridge SVD] Mean Absolute error is {mean_absolute_error(target_data, y_hat_ridge_svd):3f}"
     )
     LOGGER.info(
-        f"[SVD] Coefficients {regressor_svd_l2.coefficients_}"
+        f"[Ridge SVD] Coefficients {regressor_ridge_svd.coefficients_}"
     )
