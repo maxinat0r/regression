@@ -16,23 +16,62 @@ class LinearMaxregressor:
         self.alpha = alpha
         self.constant_ = None
 
-    def _calculate_coefficients_svd(self, X,y):
-        # Use SVD
-        U, Sigma, Vt = np.linalg.svd(X.T @ X)
-        V = Vt.T
-        # Get Moore-Penrose pseudoinverse of X squared
-        Sigma_pinv = np.linalg.pinv(np.diag(Sigma))
-        X_squared_pinv = V @ Sigma_pinv @ U.T
-        self.coefficients_ = np.array(X_squared_pinv @ X.T @ y)
+    def _calculate_coefficients_svd(self, X, y):
+        # Use Singular Value Decomposition to split the X matrix into three components
+        # U and Vt are orthogonal matrices
+        # Sigma is a rectangular diagonal matrix with non-negative real numbers on the diagonal
+        U, Sigma, Vt = np.linalg.svd(X, full_matrices=False)
+
+        # Get Moore-Penrose pseudoinverse of Sigma by dividing 1 by Sigma, returning 0 when Sigma is 0.
+        Sigma_pinv = np.divide(1, Sigma, out=np.zeros_like(Sigma), where=Sigma != 0)
+
+        self.coefficients_ = Sigma_pinv * (U.T @ y) @ Vt
 
     def _calculate_coefficients_svd_l2(self, X, y):
+        """
+        Use Singular Value Decomposition to minimize the following objective function:
+
+        ||y - X*Beta||^2_2 + alpha * ||Beta||^2_2
+
+        In words: the L2-norm  of the error plus alpha times the L2-norm of the beta coefficients.
+
+        The L2-norm is also known as Euclidean norm because it measures the distance
+        between vectors in terms of the Euclidean distance.
+
+        The L2-norm of a vector x is calculated by summing the squares of its absolute values.
+        ||x||^2_2 = SUM(|x|^2)|i=1 to i=n
+        """
+        # Use Singular Value Decomposition to split the X matrix into three components
+        # U and Vt are orthogonal matrices
+        # Sigma is a rectangular diagonal matrix with non-negative real numbers on the diagonal
         U, Sigma, Vt = np.linalg.svd(X, full_matrices=False)
-        denominator = Sigma ** 2 + self.alpha
-        d = np.divide(Sigma, denominator, out=np.zeros_like(Sigma), where=denominator != 0)
-        self.coefficients_ = np.array(d * (U.T @ y) @ Vt)
+
+        # Get Moore-Penrose pseudoinverse of Sigma by dividing sigma by its square, returning 0 when Sigma square is 0.
+        Sigma_pinv = np.divide(
+            1,
+            Sigma**2 + self.alpha,
+            out=np.zeros_like(Sigma),
+            where=Sigma**2 + self.alpha != 0,
+        )
+
+        self.coefficients_ = Sigma_pinv * (U.T @ y) @ Vt
 
     def _calculate_coefficients_ols(self, X, y):
-        self.coefficients_ = np.linalg.inv(X.T @ X) @ (X.T @ y)
+        """
+        Use the normal equation to find the coefficient vector of the least-squares hyperplane.
+        The normal equation is defined as:
+
+        beta_hat = (X.T @ X)^-1 @ (X.T @ y)
+
+        Gram matrix = X.T @ X
+        moment matrix = X.T @ y
+
+        In words: Beta hat is the dot-product of moment matrix and the inverse Gram matrix.
+        """
+        moment_matrix = X.T @ y
+        gram_matrix = X.T @ X
+        inverse_gram_matrix = np.linalg.inv(gram_matrix)
+        self.coefficients_ = inverse_gram_matrix @ moment_matrix
         LOGGER.info(f"[LinearMaxregressor] Coefficients are {self.coefficients_}")
 
     def _calculate_constant(self, X, y):
@@ -46,7 +85,7 @@ class LinearMaxregressor:
         known_methods = ["ols", "svd", "svd_l2"]
         if self.method not in (known_methods):
             raise ValueError(
-               f"""Known methods are {known_methods}. Got "{self.method}"."""
+                f"""Known methods are {known_methods}. Got "{self.method}"."""
             )
         if self.method == "ols":
             self._calculate_coefficients_ols(X, y)
