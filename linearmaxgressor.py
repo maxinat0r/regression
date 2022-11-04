@@ -83,7 +83,7 @@ class LinearMaxregressor:
         Fit the LinearMaxregressor
         """
         known_methods = ["ols", "svd", "svd_l2"]
-        if self.method not in (known_methods):
+        if self.method not in known_methods:
             raise ValueError(
                 f"""Known methods are {known_methods}. Got "{self.method}"."""
             )
