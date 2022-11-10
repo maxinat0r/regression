@@ -34,7 +34,7 @@ if __name__ == "__main__":
     regressor_svd.fit(X=feature_data, y=target_data)
 
     regressor_ridge_svd = LinearMaxregressor(
-        method="regressor_ridge_svd", include_constant=True, alpha=25000
+        method="ridge_svd", include_constant=True, alpha=25000
     )
     regressor_ridge_svd.fit(X=feature_data, y=target_data)
 

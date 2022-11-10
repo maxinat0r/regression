@@ -73,11 +73,10 @@ class LinearMaxregressor:
         gram_matrix = X.T @ X
         inverse_gram_matrix = np.linalg.inv(gram_matrix)
         self.coefficients_ = inverse_gram_matrix @ moment_matrix
-        LOGGER.info(f"[LinearMaxregressor] Coefficients are {self.coefficients_}")
+
 
     def _calculate_constant(self, X, y):
         self.constant_ = np.mean(y - (X @ self.coefficients_))
-        LOGGER.info(f"[LinearMaxregressor] Constant (intercept) is {self.constant_}")
 
     def fit(self, X, y):
         """
@@ -95,8 +94,12 @@ class LinearMaxregressor:
         elif self.method == "ridge_svd":
             self._calculate_coefficients_ridge_svd(X, y)
 
+        LOGGER.info(f"[LinearMaxregressor] Coefficients are {self.coefficients_}")
+
         if self.include_constant:
             self._calculate_constant(X, y)
+
+        LOGGER.info(f"[LinearMaxregressor] Constant (intercept) is {self.constant_}")
 
         LOGGER.info("[LinearMaxregressor] Fitting finished")
 
