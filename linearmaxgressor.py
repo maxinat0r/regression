@@ -15,9 +15,32 @@ class LinearMaxregressor:
         self.include_constant = include_constant
         self.alpha = alpha
         self.constant_ = None
+        self.n_iterations = 100
+        self.learning_rate = 0.1
+
+    def _calculate_coeffients_gradient_descent(self, X, y):
+        """
+        Use Gradient Descent to solve for least squares
+        """
+        X_normed = X / X.max(axis=0)
+        m = X.shape[0]
+        n = X.shape[1]
+        limit = 1 / np.sqrt(n)
+        self.coefficients_ = np.random.uniform(-limit, limit, n)
+
+        for i in range(self.n_iterations):
+            yhat = X_normed @ self.coefficients_
+            error = y - yhat
+            mse = np.mean(error**2)
+            gradient = -(error @ X_normed / m)
+            self.coefficients_ -= self.learning_rate * gradient
+            if i % 10 == 0:
+                LOGGER.info(f"[Gradient Descend] Iteration {i}. MSE: {mse}")
 
     def _calculate_coefficients_svd(self, X, y):
-        # Use Singular Value Decomposition to split the X matrix into three components
+        """
+        """
+        # Use Singular Value Decomposition to decompose the X
         # The returned Sigma is a vector containing only the diagonals
         U, Sigma, Vt = np.linalg.svd(X, full_matrices=False)
 
@@ -82,24 +105,27 @@ class LinearMaxregressor:
         """
         Fit the LinearMaxregressor
         """
-        known_methods = ["ols", "svd", "ridge_svd"]
+        known_methods = ["ols", "svd", "ridge_svd", "gradient_descent"]
         if self.method not in known_methods:
             raise ValueError(
                 f"""Known methods are {known_methods}. Got "{self.method}"."""
             )
+        LOGGER.info(f"[LinearMaxregressor] Method: {self.method}")
         if self.method == "ols":
             self._calculate_coefficients_ols(X, y)
         elif self.method == "svd":
             self._calculate_coefficients_svd(X, y)
         elif self.method == "ridge_svd":
             self._calculate_coefficients_ridge_svd(X, y)
+        elif self.method == "gradient_descent":
+            self._calculate_coeffients_gradient_descent(X, y)
 
-        LOGGER.info(f"[LinearMaxregressor] Coefficients are {self.coefficients_}")
+        LOGGER.info(f"[LinearMaxregressor] Coefficients: {self.coefficients_}")
 
         if self.include_constant:
             self._calculate_constant(X, y)
 
-        LOGGER.info(f"[LinearMaxregressor] Constant (intercept) is {self.constant_}")
+        LOGGER.info(f"[LinearMaxregressor] Constant (intercept): {self.constant_}")
 
         LOGGER.info("[LinearMaxregressor] Fitting finished")
 

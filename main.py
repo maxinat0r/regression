@@ -38,6 +38,9 @@ if __name__ == "__main__":
     )
     regressor_ridge_svd.fit(X=feature_data, y=target_data)
 
+    regresspr_gradient_descent = LinearMaxregressor(method="gradient_descent")
+    regresspr_gradient_descent.fit(X=feature_data, y=target_data)
+
     y_hat_ols = regressor_ols.predict(X=feature_data)
     y_hat_svd = regressor_svd.predict(X=feature_data)
     y_hat_ridge_svd = regressor_ridge_svd.predict(X=feature_data)
