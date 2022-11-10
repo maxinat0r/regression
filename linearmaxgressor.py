@@ -83,7 +83,7 @@ class LinearMaxregressor:
         """
         Fit the LinearMaxregressor
         """
-        known_methods = ["ols", "svd", "svd_l2"]
+        known_methods = ["ols", "svd", "ridge_svd"]
         if self.method not in known_methods:
             raise ValueError(
                 f"""Known methods are {known_methods}. Got "{self.method}"."""
@@ -94,11 +94,6 @@ class LinearMaxregressor:
             self._calculate_coefficients_svd(X, y)
         elif self.method == "ridge_svd":
             self._calculate_coefficients_ridge_svd(X, y)
-        else:
-            LOGGER.error(
-                f"""[LinearMaxregressor] Specified method "
-                {self.method}" is not known."""
-            )
 
         if self.include_constant:
             self._calculate_constant(X, y)
