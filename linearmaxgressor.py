@@ -20,18 +20,24 @@ class LinearMaxregressor:
 
     def _calculate_coeffients_gradient_descent(self, X, y):
         """
-        Use Gradient Descent to solve for least squares
+        Use Gradient Descent to solve for least squares.
+        Loss function is Mean Squared Errors
+
         """
         X_normed = X / X.max(axis=0)
         m = X.shape[0]
         n = X.shape[1]
-        limit = 1 / np.sqrt(n)
-        self.coefficients_ = np.random.uniform(-limit, limit, n)
 
+        # Initialize with random coefficients between -1 and 1
+        self.coefficients_ = np.random.uniform(-1, 1, n)
+
+        # Do batch gradient descent, iterating
         for i in range(self.n_iterations):
             yhat = X_normed @ self.coefficients_
             error = y - yhat
             mse = np.mean(error**2)
+
+            # Calculate the gradient using the derivative of the loss function (MSE)
             gradient = -(error @ X_normed / m)
             self.coefficients_ -= self.learning_rate * gradient
             if i % 10 == 0:
