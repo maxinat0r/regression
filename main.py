@@ -53,12 +53,10 @@ def main():
 
     plot = (
             ggplot(molten_df)
-            + aes(x="alpha", y="coefficient")
-            + geom_line(colour="feature")
+            + aes(x="alpha", y="coefficient", colour="feature")
+            + geom_line()
             + theme(legend_position="top", figure_size=(10, 12))
     )
-
-
 
     print(plot)
 if __name__ == "__main__":
