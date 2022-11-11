@@ -5,7 +5,7 @@ import pandas as pd
 import constants as c
 from linearmaxgressor import LinearMaxregressor
 from metrics.metrics import mean_absolute_error
-
+from utils import train_test_split
 LOGGER = logging.getLogger(__name__)
 
 logging.basicConfig(
@@ -21,15 +21,19 @@ def main():
     feature_selection = ["LotFrontage", "LotArea", "BedroomAbvGr"]
     target_selection = "SalePrice"
     df.dropna(subset=feature_selection, inplace=True)
-    feature_data = df[feature_selection]
-    target_data = df[target_selection]
+
+    train_df, test_df = train_test_split(df)
+    X_train = train_df[feature_selection]
+    y_train = train_df[target_selection]
+    X_test = test_df[feature_selection]
+    y_test = test_df[target_selection]
 
     for method in c.known_methods:
         regressor = LinearMaxregressor(method=method)
-        regressor.fit(X=feature_data, y=target_data)
-        y_hat = regressor.predict(X=feature_data)
+        regressor.fit(X=X_train, y=y_train)
+        y_hat = regressor.predict(X=X_test)
         LOGGER.info(
-            f"[{method}] Mean Absolute error is {mean_absolute_error(target_data, y_hat):,.0f}"
+            f"[{method}] Mean Absolute error is {mean_absolute_error(y_test, y_hat):,.0f}"
         )
         LOGGER.info(f"[{method}] Coefficients {regressor.coefficients_}")
 
