@@ -58,7 +58,7 @@ class LinearMaxregressor:
 
             # Calculate the gradient using the partial derivative of
             # the loss function (MSE) with respect to coefficients
-            gradient = -2 / m * ((error + self.alpha) @ X_normed)
+            gradient = -2 / m * ((error) @ X_normed) + (self.alpha * self.coefficients_)
 
             # Update coefficients using the new gradient
             eta = self.learning_schedule(i + i)
