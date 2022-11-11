@@ -2,6 +2,8 @@ import logging
 
 import numpy as np
 
+import constants as c
+
 LOGGER = logging.getLogger(__name__)
 
 
@@ -10,38 +12,20 @@ class LinearMaxregressor:
     Fit the LinearMaxregressor
     """
 
-    def __init__(self, method="ols", include_constant=True, alpha=1):
+    def __init__(
+        self,
+        method="ols",
+        include_constant=True,
+        alpha=0,
+        n_iterations=500,
+        learning_rate=0.1,
+    ):
         self.method = method
         self.include_constant = include_constant
         self.alpha = alpha
         self.constant_ = None
-        self.n_iterations = 100
-        self.learning_rate = 0.1
-
-    def _calculate_coeffients_batch_gradient_descent(self, X, y):
-        """
-        Use Gradient Descent to solve for least squares.
-        Loss function is Mean Squared Errors
-
-        """
-        X_normed = X / X.max(axis=0)
-        m = X.shape[0]
-        n = X.shape[1]
-
-        # Initialize random coefficients between -1 and 1
-        self.coefficients_ = np.random.uniform(-1, 1, n)
-
-        # Do batch gradient descent, iterating
-        for i in range(self.n_iterations):
-            yhat = X_normed @ self.coefficients_
-            error = y - yhat
-            mse = np.mean(error**2)
-
-            # Calculate the gradient using the derivative of the loss function (MSE)
-            gradient = -2 / m * (error @ X_normed)
-            self.coefficients_ -= self.learning_rate * gradient
-            if i % 10 == 0:
-                LOGGER.info(f"[Gradient Descend] Iteration {i}. MSE: {mse:,.0f}")
+        self.n_iterations = n_iterations
+        self.learning_rate = learning_rate
 
     def learning_schedule(self, t):
         """
@@ -54,9 +38,11 @@ class LinearMaxregressor:
         eta = t0 / (t + t1)
         return eta
 
-    def _calculate_coeffients_stochastic_gradient_descent(self, X, y):
-        n_epochs = 50
-
+    def _calculate_coeffients_batch_gradient_descent(self, X, y):
+        """
+        Use Gradient Descent to solve for least squares.
+        Loss function is Mean Squared Errors.
+        """
         X_normed = X / X.max(axis=0)
         m = X.shape[0]
         n = X.shape[1]
@@ -64,25 +50,24 @@ class LinearMaxregressor:
         # Initialize random coefficients between -1 and 1
         self.coefficients_ = np.random.uniform(-1, 1, n)
 
+        # Do batch gradient descent 'n_iteration' times
         for i in range(self.n_iterations):
+            yhat = X_normed @ self.coefficients_
+            error = y - yhat
+            mse = np.mean(error**2)
 
-            for _ in range(m):
-                random_index = np.random.randint(m)
-                X_selection = X_normed[random_index:random_index + 1]
-                y_selection = y[random_index:random_index + 1]
-                yhat = X_selection @ self.coefficients_
-                error = y_selection - yhat
-                mse = np.mean(error ** 2)
-                gradient = -2(error @ X_selection)
-                eta = self.learning_schedule(i * m + i)
-                self.coefficients_ -= eta * gradient
+            # Calculate the gradient using the partial derivative of
+            # the loss function (MSE) with respect to coefficients
+            gradient = -2 / m * ((error + self.alpha) @ X_normed)
 
-            if i % 10 == 0:
+            # Update coefficients using the new gradient
+            eta = self.learning_schedule(i + i)
+            self.coefficients_ -= eta * gradient
+            if i % 100 == 0:
                 LOGGER.info(f"[Gradient Descend] Iteration {i}. MSE: {mse:,.0f}")
 
     def _calculate_coefficients_svd(self, X, y):
-        """
-        """
+        """ """
         # Use Singular Value Decomposition to decompose the X
         # The returned Sigma is a vector containing only the diagonals
         U, Sigma, Vt = np.linalg.svd(X, full_matrices=False)
@@ -140,7 +125,6 @@ class LinearMaxregressor:
         inverse_gram_matrix = np.linalg.inv(gram_matrix)
         self.coefficients_ = inverse_gram_matrix @ moment_matrix
 
-
     def _calculate_constant(self, X, y):
         self.constant_ = np.mean(y - (X @ self.coefficients_))
 
@@ -148,10 +132,9 @@ class LinearMaxregressor:
         """
         Fit the LinearMaxregressor
         """
-        known_methods = ["ols", "svd", "ridge_svd", "gradient_descent"]
-        if self.method not in known_methods:
+        if self.method not in c.known_methods:
             raise ValueError(
-                f"""Known methods are {known_methods}. Got "{self.method}"."""
+                f"""Known methods are {c.known_methods}. Got "{self.method}"."""
             )
         LOGGER.info(f"[LinearMaxregressor] Method: {self.method}")
         if self.method == "ols":

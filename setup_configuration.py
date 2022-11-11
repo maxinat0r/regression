@@ -4,7 +4,7 @@ CODE_NAME = "regression"
 setup_configuration = {
     "name": CODE_NAME,
     "version": CURRENT_VERSION,
-    "description": "Delayed orders",
+    "description": "Regression",
     "author": "Max de la Vieter",
     "author_email": "max.delavieter@coolblue.nl",
     "include_package_data": True,
