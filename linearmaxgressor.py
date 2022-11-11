@@ -18,7 +18,7 @@ class LinearMaxregressor:
         self.n_iterations = 100
         self.learning_rate = 0.1
 
-    def _calculate_coeffients_gradient_descent(self, X, y):
+    def _calculate_coeffients_batch_gradient_descent(self, X, y):
         """
         Use Gradient Descent to solve for least squares.
         Loss function is Mean Squared Errors
@@ -28,7 +28,7 @@ class LinearMaxregressor:
         m = X.shape[0]
         n = X.shape[1]
 
-        # Initialize with random coefficients between -1 and 1
+        # Initialize random coefficients between -1 and 1
         self.coefficients_ = np.random.uniform(-1, 1, n)
 
         # Do batch gradient descent, iterating
@@ -38,10 +38,47 @@ class LinearMaxregressor:
             mse = np.mean(error**2)
 
             # Calculate the gradient using the derivative of the loss function (MSE)
-            gradient = -(error @ X_normed / m)
+            gradient = -2 / m * (error @ X_normed)
             self.coefficients_ -= self.learning_rate * gradient
             if i % 10 == 0:
-                LOGGER.info(f"[Gradient Descend] Iteration {i}. MSE: {mse}")
+                LOGGER.info(f"[Gradient Descend] Iteration {i}. MSE: {mse:,.0f}")
+
+    def learning_schedule(self, t):
+        """
+        Learning schedule starting at 0.1 and decreasing for t
+        Arguments: t
+        Returns:
+        """
+        t0 = 5
+        t1 = 50
+        eta = t0 / (t + t1)
+        return eta
+
+    def _calculate_coeffients_stochastic_gradient_descent(self, X, y):
+        n_epochs = 50
+
+        X_normed = X / X.max(axis=0)
+        m = X.shape[0]
+        n = X.shape[1]
+
+        # Initialize random coefficients between -1 and 1
+        self.coefficients_ = np.random.uniform(-1, 1, n)
+
+        for i in range(self.n_iterations):
+
+            for _ in range(m):
+                random_index = np.random.randint(m)
+                X_selection = X_normed[random_index:random_index + 1]
+                y_selection = y[random_index:random_index + 1]
+                yhat = X_selection @ self.coefficients_
+                error = y_selection - yhat
+                mse = np.mean(error ** 2)
+                gradient = -2(error @ X_selection)
+                eta = self.learning_schedule(i * m + i)
+                self.coefficients_ -= eta * gradient
+
+            if i % 10 == 0:
+                LOGGER.info(f"[Gradient Descend] Iteration {i}. MSE: {mse:,.0f}")
 
     def _calculate_coefficients_svd(self, X, y):
         """
@@ -124,7 +161,7 @@ class LinearMaxregressor:
         elif self.method == "ridge_svd":
             self._calculate_coefficients_ridge_svd(X, y)
         elif self.method == "gradient_descent":
-            self._calculate_coeffients_gradient_descent(X, y)
+            self._calculate_coeffients_batch_gradient_descent(X, y)
 
         LOGGER.info(f"[LinearMaxregressor] Coefficients: {self.coefficients_}")
 
