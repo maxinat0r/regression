@@ -7,6 +7,8 @@ import constants as c
 from linearmaxgressor import LinearMaxregressor
 from metrics.metrics import mean_absolute_error, mean_squared_error
 from utils import train_test_split
+
+from normalizer import Normalizer
 LOGGER = logging.getLogger(__name__)
 
 logging.basicConfig(
@@ -25,6 +27,11 @@ def main():
     X_test = test_df[c.feature_selection]
     y_test = test_df[c.target_selection]
 
+    normalizer = Normalizer()
+    normalizer.fit(X_train)
+    X_train = normalizer.transform(X_train)
+    X_test = normalizer.transform(X_test)
+
     for method in c.known_methods:
         model = LinearMaxregressor(method=method)
         model.fit(X=X_train, y=y_train)
@@ -34,8 +41,9 @@ def main():
         )
         LOGGER.info(f"[{method}] Coefficients {model.coefficients_}")
 
+
     result_out = pd.DataFrame()
-    for alpha in range(0,50):
+    for alpha in range(0,25):
         model = LinearMaxregressor(method="gradient_descent", alpha=alpha)
         model.fit(X=X_train, y=y_train)
         y_hat = model.predict(X=X_test)
@@ -45,19 +53,34 @@ def main():
         result["alpha"] = alpha
         result_out = pd.concat([result_out, result], ignore_index=True)
 
-    molten_df = pd.melt(result_out,
-                        id_vars=["alpha", "mse"],
-                        value_vars=c.feature_selection,
+    coefficient_df = pd.melt(result_out,
+                        id_vars=["alpha"],
+                        value_vars=["mse"],
                         var_name="feature",
                         value_name="coefficient")
 
-    plot = (
+    coefficient_plot = (
             ggplot(molten_df)
             + aes(x="alpha", y="coefficient", colour="feature")
             + geom_line()
             + theme(legend_position="top", figure_size=(10, 12))
     )
 
-    print(plot)
+    mse_df = pd.melt(result_out,
+                        id_vars=["alpha"],
+                        value_vars=["mse"],
+                        var_name="feature",
+                        value_name="mse")
+
+    mse_plot = (
+            ggplot(mse_df)
+            + aes(x="alpha", y="mse")
+            + geom_line()
+            + theme(figure_size=(8, 8))
+    )
+
+    print(coefficient_plot)
+    print(mse_plot)
+
 if __name__ == "__main__":
     main()

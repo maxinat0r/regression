@@ -33,8 +33,8 @@ class LinearMaxregressor:
         Arguments: t
         Returns:
         """
-        t0 = 5
-        t1 = 50
+        t0 = 10
+        t1 = 100
         eta = t0 / (t + t1)
         return eta
 
@@ -43,7 +43,7 @@ class LinearMaxregressor:
         Use Gradient Descent to solve for least squares.
         Loss function is Mean Squared Errors.
         """
-        X_normed = X / X.max(axis=0)
+
         m = X.shape[0]
         n = X.shape[1]
 
@@ -52,13 +52,13 @@ class LinearMaxregressor:
 
         # Do batch gradient descent 'n_iteration' times
         for i in range(self.n_iterations):
-            yhat = X_normed @ self.coefficients_
+            yhat = X @ self.coefficients_
             error = y - yhat
             mse = np.mean(error**2)
 
             # Calculate the gradient using the partial derivative of
             # the loss function (MSE) with respect to coefficients
-            gradient = -2 / m * ((error) @ X_normed) + (self.alpha * self.coefficients_)
+            gradient = -2 / m * ((error) @ X) + (self.alpha * self.coefficients_)
 
             # Get eta, which decreases for each iteration
             eta = self.learning_schedule(i)
@@ -66,7 +66,7 @@ class LinearMaxregressor:
             # Update coefficients using the new gradient
             self.coefficients_ -= eta * gradient
             if i % 100 == 0:
-                LOGGER.info(f"[Gradient Descent] Iteration {i}. MSE: {mse:,.0f}")
+                LOGGER.info(f"[Gradient Descent] Iteration {i}. Eta: {eta}. MSE: {mse:,.0f}")
 
     def _calculate_coefficients_svd(self, X, y):
         """ """
