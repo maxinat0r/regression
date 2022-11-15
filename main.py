@@ -8,7 +8,7 @@ from linearmaxgressor import LinearMaxregressor
 from metrics.metrics import mean_absolute_error, mean_squared_error
 from utils import train_test_split
 
-from normalizer import Normalizer
+from normalizer import MinMaxilizer
 LOGGER = logging.getLogger(__name__)
 
 logging.basicConfig(
@@ -27,7 +27,7 @@ def main():
     X_test = test_df[c.feature_selection]
     y_test = test_df[c.target_selection]
 
-    normalizer = Normalizer()
+    normalizer = MinMaxilizer()
     normalizer.fit(X_train)
     X_train = normalizer.transform(X_train)
     X_test = normalizer.transform(X_test)
