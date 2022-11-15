@@ -60,7 +60,7 @@ def main():
                         value_name="coefficient")
 
     coefficient_plot = (
-            ggplot(molten_df)
+            ggplot(coefficient_df)
             + aes(x="alpha", y="coefficient", colour="feature")
             + geom_line()
             + theme(legend_position="top", figure_size=(10, 12))
