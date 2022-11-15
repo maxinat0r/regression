@@ -60,11 +60,13 @@ class LinearMaxregressor:
             # the loss function (MSE) with respect to coefficients
             gradient = -2 / m * ((error) @ X_normed) + (self.alpha * self.coefficients_)
 
+            # Get eta, which decreases for each iteration
+            eta = self.learning_schedule(i)
+
             # Update coefficients using the new gradient
-            eta = self.learning_schedule(i + i)
             self.coefficients_ -= eta * gradient
             if i % 100 == 0:
-                LOGGER.info(f"[Gradient Descend] Iteration {i}. MSE: {mse:,.0f}")
+                LOGGER.info(f"[Gradient Descent] Iteration {i}. MSE: {mse:,.0f}")
 
     def _calculate_coefficients_svd(self, X, y):
         """ """
@@ -72,7 +74,8 @@ class LinearMaxregressor:
         # The returned Sigma is a vector containing only the diagonals
         U, Sigma, Vt = np.linalg.svd(X, full_matrices=False)
 
-        # Get Moore-Penrose pseudoinverse of Sigma by dividing 1 by Sigma, returning 0 when Sigma is 0.
+        # Get Moore-Penrose pseudoinverse of Sigma by taking the
+        # reciprocal of its nonzero elements.
         Sigma_pinv = np.divide(1, Sigma, out=np.zeros_like(Sigma), where=Sigma != 0)
 
         self.coefficients_ = Sigma_pinv * (U.T @ y) @ Vt
