@@ -1,6 +1,3 @@
-import pandas as pd
-
-
 class MinMaxilizer:
     """
     Simple min MAX normalizer ;)
@@ -12,5 +9,5 @@ class MinMaxilizer:
         return self
 
     def transform(self, X):
-        X_normed = (X - self.min)/(self.max - self.min)
+        X_normed = (X - self.min) / (self.max - self.min)
         return X_normed

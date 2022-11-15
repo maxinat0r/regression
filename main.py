@@ -1,14 +1,15 @@
 import logging
 import os
-from plotnine import ggplot, aes, geom_line, labs, theme, scales, facet_grid
 
 import pandas as pd
+from plotnine import aes, facet_grid, geom_line, ggplot, labs, scales, theme
+
 import constants as c
 from linearmaxgressor import LinearMaxregressor
 from metrics.metrics import mean_absolute_error, mean_squared_error
+from normalizer import MinMaxilizer
 from utils import train_test_split
 
-from normalizer import MinMaxilizer
 LOGGER = logging.getLogger(__name__)
 
 logging.basicConfig(
@@ -16,6 +17,8 @@ logging.basicConfig(
     level=logging.INFO,
     datefmt="%Y-%m-%d %H:%M:%S",
 )
+
+
 def main():
     current_directory = os.path.dirname(__file__)
     df = pd.read_csv(os.path.join(current_directory, c.data_path_from_root))
@@ -41,9 +44,8 @@ def main():
         )
         LOGGER.info(f"[{method}] Coefficients {model.coefficients_}")
 
-
     result_out = pd.DataFrame()
-    for alpha in range(0,25):
+    for alpha in range(0, 25):
         model = LinearMaxregressor(method="gradient_descent", alpha=alpha)
         model.fit(X=X_train, y=y_train)
         y_hat = model.predict(X=X_test)
@@ -53,34 +55,39 @@ def main():
         result["alpha"] = alpha
         result_out = pd.concat([result_out, result], ignore_index=True)
 
-    coefficient_df = pd.melt(result_out,
-                        id_vars=["alpha"],
-                        value_vars=["mse"],
-                        var_name="feature",
-                        value_name="coefficient")
-
-    coefficient_plot = (
-            ggplot(coefficient_df)
-            + aes(x="alpha", y="coefficient", colour="feature")
-            + geom_line()
-            + theme(legend_position="top", figure_size=(10, 12))
+    coefficient_df = pd.melt(
+        result_out,
+        id_vars=["alpha"],
+        value_vars=["mse"],
+        var_name="feature",
+        value_name="coefficient",
     )
 
-    mse_df = pd.melt(result_out,
-                        id_vars=["alpha"],
-                        value_vars=["mse"],
-                        var_name="feature",
-                        value_name="mse")
+    coefficient_plot = (
+        ggplot(coefficient_df)
+        + aes(x="alpha", y="coefficient", colour="feature")
+        + geom_line()
+        + theme(legend_position="top", figure_size=(10, 12))
+    )
+
+    mse_df = pd.melt(
+        result_out,
+        id_vars=["alpha"],
+        value_vars=["mse"],
+        var_name="feature",
+        value_name="mse",
+    )
 
     mse_plot = (
-            ggplot(mse_df)
-            + aes(x="alpha", y="mse")
-            + geom_line()
-            + theme(figure_size=(8, 8))
+        ggplot(mse_df)
+        + aes(x="alpha", y="mse")
+        + geom_line()
+        + theme(figure_size=(8, 8))
     )
 
     print(coefficient_plot)
     print(mse_plot)
+
 
 if __name__ == "__main__":
     main()

@@ -66,7 +66,9 @@ class LinearMaxregressor:
             # Update coefficients using the new gradient
             self.coefficients_ -= eta * gradient
             if i % 100 == 0:
-                LOGGER.info(f"[Gradient Descent] Iteration {i}. Eta: {eta}. MSE: {mse:,.0f}")
+                LOGGER.info(
+                    f"[Gradient Descent] Iteration {i}. Eta: {eta}. MSE: {mse:,.0f}"
+                )
 
     def _calculate_coefficients_svd(self, X, y):
         """ """
