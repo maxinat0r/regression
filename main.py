@@ -42,7 +42,6 @@ def main():
         LOGGER.info(
             f"[{method}] Mean Absolute error is {mean_absolute_error(y_test, y_hat):,.0f}"
         )
-        LOGGER.info(f"[{method}] Coefficients {model.coefficients_}")
 
     result_out = pd.DataFrame()
     for alpha in range(0, 25):

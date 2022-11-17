@@ -103,9 +103,10 @@ class LinearMaxregressor:
         # Sigma is a rectangular diagonal matrix with non-negative real numbers on the diagonal
         U, Sigma, Vt = np.linalg.svd(X, full_matrices=False)
 
-        # Get Moore-Penrose pseudoinverse of Sigma by dividing sigma by its square, returning 0 when Sigma square is 0.
+        # Get Moore-Penrose pseudoinverse of Sigma by dividing sigma by its square,
+        # returning 0 when Sigma square is 0.
         Sigma_pinv = np.divide(
-            1,
+            Sigma,
             Sigma**2 + self.alpha,
             out=np.zeros_like(Sigma),
             where=Sigma**2 + self.alpha != 0,
@@ -151,12 +152,12 @@ class LinearMaxregressor:
         elif self.method == "gradient_descent":
             self._calculate_coeffients_batch_gradient_descent(X, y)
 
-        LOGGER.info(f"[LinearMaxregressor] Coefficients: {self.coefficients_}")
+        LOGGER.info(f"[LinearMaxregressor] Coefficients: {self.coefficients_:,.0f}")
 
         if self.include_constant:
             self._calculate_constant(X, y)
 
-        LOGGER.info(f"[LinearMaxregressor] Constant (intercept): {self.constant_}")
+        LOGGER.info(f"[LinearMaxregressor] Constant (intercept): {self.constant_:,.0f}")
 
         LOGGER.info("[LinearMaxregressor] Fitting finished")
 
