@@ -1,4 +1,5 @@
 import logging
+from abc import ABC, abstractmethod
 
 import numpy as np
 
@@ -7,50 +8,56 @@ import constants as c
 LOGGER = logging.getLogger(__name__)
 
 
-class LinearMaxregressor:
+class Regressor(ABC):
     """
-    Fit the LinearMaxregressor
+    Abstract Base Class for Regressors.
     """
 
     def __init__(
         self,
         method="ols",
         include_constant=True,
-        alpha=0,
         n_iterations=500,
         learning_rate=0.1,
     ):
         self.method = method
         self.include_constant = include_constant
-        self.alpha = alpha
         self.constant_ = None
         self.n_iterations = n_iterations
         self.learning_rate = learning_rate
 
-    def learning_schedule(self, t):
+    @staticmethod
+    def learning_schedule(t):
         """
         Learning schedule starting at 0.1 and decreasing for t
         Arguments: t
-        Returns:
+        Returns: eta
         """
         t0 = 10
         t1 = 100
         eta = t0 / (t + t1)
         return eta
 
-    def _calculate_coeffients_batch_gradient_descent(self, X, y):
+    def _initatialize_coefficients(self, X, low=-1, high=1):
         """
-        Use Gradient Descent to solve for least squares.
+        Initialize a random coefficients for each feature by sampling
+        uniformly fromhe half-open interval [low, high) (includes low, but excludes high)
+        """
+        n = X.shape[1]
+        self.coefficients_ = np.random.uniform(low, high, n)
+
+    def _batch_gradient_descent(self, X, y):
+        """
+        Use Batch Gradient Descent to solve for least squares.
         Loss function is Mean Squared Errors.
+
+        Args:
+            n_iterations: The amount of interations used in gradient descent
+            alpha:
         """
 
         m = X.shape[0]
-        n = X.shape[1]
 
-        # Initialize random coefficients between -1 and 1
-        self.coefficients_ = np.random.uniform(-1, 1, n)
-
-        # Do batch gradient descent 'n_iteration' times
         for i in range(self.n_iterations):
             yhat = X @ self.coefficients_
             error = y - yhat
@@ -70,51 +77,28 @@ class LinearMaxregressor:
                     f"[Gradient Descent] Iteration {i}. Eta: {eta}. MSE: {mse:,.0f}"
                 )
 
-    def _calculate_coefficients_svd(self, X, y):
-        """ """
-        # Use Singular Value Decomposition to decompose the X
-        # The returned Sigma is a vector containing only the diagonals
-        U, Sigma, Vt = np.linalg.svd(X, full_matrices=False)
+    def _solve_bgd(self, X, y):
+        self._initatialize_coefficients(X)
+        self._batch_gradient_descent(X, y)
 
-        # Get Moore-Penrose pseudoinverse of Sigma by taking the
-        # reciprocal of its nonzero elements.
-        Sigma_pinv = np.divide(1, Sigma, out=np.zeros_like(Sigma), where=Sigma != 0)
+    def _calculate_constant(self, X, y):
+        self.constant_ = np.mean(y - (X @ self.coefficients_))
 
-        self.coefficients_ = Sigma_pinv * (U.T @ y) @ Vt
+    @abstractmethod
+    def fit(self, X, y):
+        """Fit the model using training data."""
 
-    def _calculate_coefficients_ridge_svd(self, X, y):
-        """
-        Linear Regression with L2 regularization, also known as Ridge.
+    def predict(self, X):
+        """Make predictions using a fitted model."""
+        if self.coefficients_ is None:
+            LOGGER.error(
+                "[LinearMaxregressor] Model not fit yet. Call fit to fit the model."
+            )
+        return X @ self.coefficients_ + self.constant_
 
-        Use Singular Value Decomposition to minimize the following objective function:
 
-        ||y - X*Beta||^2_2 + alpha * ||Beta||^2_2
-
-        In words: the L2-norm  of the error plus alpha times the L2-norm of the beta coefficients.
-
-        The L2-norm is also known as Euclidean norm because it measures the distance
-        between vectors in terms of the Euclidean distance.
-
-        The L2-norm of a vector x is calculated by summing the squares of its absolute values.
-        ||x||^2_2 = SUM(|x|^2)|i=1 to i=n
-        """
-        # Use Singular Value Decomposition to split the X matrix into three components
-        # U and Vt are orthogonal matrices
-        # Sigma is a rectangular diagonal matrix with non-negative real numbers on the diagonal
-        U, Sigma, Vt = np.linalg.svd(X, full_matrices=False)
-
-        # Get Moore-Penrose pseudoinverse of Sigma by dividing sigma by its square,
-        # returning 0 when Sigma square is 0.
-        Sigma_pinv = np.divide(
-            Sigma,
-            Sigma**2 + self.alpha,
-            out=np.zeros_like(Sigma),
-            where=Sigma**2 + self.alpha != 0,
-        )
-
-        self.coefficients_ = Sigma_pinv * (U.T @ y) @ Vt
-
-    def _calculate_coefficients_ols(self, X, y):
+class LinearRegressor(Regressor):
+    def solve_ols(self, X, y):
         """
         Use the normal equation to find the coefficient vector of the least-squares hyperplane.
         The normal equation is defined as:
@@ -131,45 +115,82 @@ class LinearMaxregressor:
         inverse_gram_matrix = np.linalg.inv(gram_matrix)
         self.coefficients_ = inverse_gram_matrix @ moment_matrix
 
-    def _calculate_constant(self, X, y):
-        self.constant_ = np.mean(y - (X @ self.coefficients_))
+    def _solve_svd(self, X, y):
+        """
+        Self linear regression using Singular Value Decomposition.
+        """
+        # Use Singular Value Decomposition to decompose the X
+        # The returned Sigma is a vector containing only the diagonals
+        U, Sigma, Vt = np.linalg.svd(X, full_matrices=False)
+
+        # Get Moore-Penrose pseudoinverse of Sigma by taking the
+        # reciprocal of its nonzero elements.
+        Sigma_pinv = np.divide(1, Sigma, out=np.zeros_like(Sigma), where=Sigma != 0)
+
+        self.coefficients_ = Sigma_pinv * (U.T @ y) @ Vt
 
     def fit(self, X, y):
-        """
-        Fit the LinearMaxregressor
-        """
-        if self.method not in c.known_methods:
+        LOGGER.info("[OrdinaryLeastSquares] Fitting starting")
+
+        if self.solver not in ["ols", "svd"]:
             raise ValueError(
                 f"""Known methods are {c.known_methods}. Got "{self.method}"."""
             )
-        LOGGER.info(f"[LinearMaxregressor] Method: {self.method}")
         if self.method == "ols":
-            self._calculate_coefficients_ols(X, y)
+            self._solve_ols(X, y)
         elif self.method == "svd":
-            self._calculate_coefficients_svd(X, y)
-        elif self.method == "ridge_svd":
-            self._calculate_coefficients_ridge_svd(X, y)
-        elif self.method == "gradient_descent":
-            self._calculate_coeffients_batch_gradient_descent(X, y)
+            self._solve_svd(X, y)
 
-        LOGGER.info(f"[LinearMaxregressor] Coefficients: {self.coefficients_:,.0f}")
+        self._calculate_constants(X, y)
+        LOGGER.info("[OrdinaryLeastSquares] Fitting finished")
 
-        if self.include_constant:
-            self._calculate_constant(X, y)
 
-        LOGGER.info(f"[LinearMaxregressor] Constant (intercept): {self.constant_:,.0f}")
+class RidgeRegressor(Regressor, alpha=0):
+    """
+    Linear Regression with L2 regularization, also known as Ridge.
 
-        LOGGER.info("[LinearMaxregressor] Fitting finished")
+    This can be solved in multiple ways. This class has two options:
+    (1) Singular Value Decomposition
+    (2) Batch Gradient Descent
+    """
 
-    def predict(self, X):
-        if self.coefficients_ is None:
-            LOGGER.error(
-                "[LinearMaxregressor] Model not fit yet. Call fit to fit the model."
+    def _solve_svd(self, X, y):
+        """
+         Use Singular Value Decomposition to minimize the following objective function:
+        ||y - X*Beta||^2_2 + alpha * ||Beta||^2_2
+        In words: the L2-norm  of the error plus alpha times the L2-norm of the beta coefficients.
+        The L2-norm is also known as Euclidean norm because it measures the distance
+        between vectors in terms of the Euclidean distance.
+        The L2-norm of a vector x is calculated by summing the squares of its absolute values.
+        ||x||^2_2 = SUM(|x|^2)|i=1 to i=n
+        𝛽̂ =(𝑋𝑡𝑋+𝜆𝐼)−1 𝑋𝑡𝑦
+        𝑋=𝑈𝐷𝑉−1
+        𝛽̂ =𝑉(𝐷**2 + 𝜆𝐼)−1 𝐷𝑈𝑡𝑦
+        """
+        # Use Singular Value Decomposition to decompose the X
+        # The returned Sigma is a vector containing only the diagonals
+        U, Sigma, Vt = np.linalg.svd(X, full_matrices=False)
+
+        # Get Moore-Penrose pseudoinverse of Sigma by dividing sigma by its square,
+        # returning 0 when Sigma square is 0.
+        Sigma_pinv = np.divide(
+            Sigma,
+            Sigma**2 + self.alpha,
+            out=np.zeros_like(Sigma),
+            where=Sigma**2 + self.alpha != 0,
+        )
+        self.coefficients_ = Sigma_pinv * (U.T @ y) @ Vt
+
+    def fit(self, X, y):
+        LOGGER.info("[RidgeRegressor] Fitting starting")
+        known_methods = ["svd", "sgd"]
+        if self.solver not in known_methods:
+            raise ValueError(
+                f"""Known methods are {known_methods}. Got "{self.method}"."""
             )
-
-        yhat = X @ self.coefficients_
-
-        if self.constant_ is None:
-            return yhat
-        else:
-            return yhat + self.constant_
+        if self.method == "svd":
+            self._solve_svd(X, y)
+        elif self.method == "sgd":
+            self._solve_sgd(X, y)
+        self._calculate_constants(X, y)
+        LOGGER.info("[RidgeRegressor] Fitting finished")

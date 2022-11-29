@@ -35,13 +35,11 @@ def main():
     X_train = normalizer.transform(X_train)
     X_test = normalizer.transform(X_test)
 
-    for method in c.known_methods:
-        model = LinearMaxregressor(method=method)
-        model.fit(X=X_train, y=y_train)
-        y_hat = model.predict(X=X_test)
-        LOGGER.info(
-            f"[{method}] Mean Absolute error is {mean_absolute_error(y_test, y_hat):,.0f}"
-        )
+    ols_model = LinearMaxregressor(method="ols")
+    ols_model.fit(X=X_train, y=y_train)
+
+    svd_model = LinearMaxregressor(method="svd")
+    svd_model.fit(X=X_train, y=y_train)
 
     result_out = pd.DataFrame()
     for alpha in range(0, 25):
@@ -63,10 +61,10 @@ def main():
     )
 
     coefficient_plot = (
-        ggplot(coefficient_df)
-        + aes(x="alpha", y="coefficient", colour="feature")
-        + geom_line()
-        + theme(legend_position="top", figure_size=(10, 12))
+            ggplot(coefficient_df)
+            + aes(x="alpha", y="coefficient", colour="feature")
+            + geom_line()
+            + theme(legend_position="top", figure_size=(10, 12))
     )
 
     mse_df = pd.melt(
@@ -78,10 +76,10 @@ def main():
     )
 
     mse_plot = (
-        ggplot(mse_df)
-        + aes(x="alpha", y="mse")
-        + geom_line()
-        + theme(figure_size=(8, 8))
+            ggplot(mse_df)
+            + aes(x="alpha", y="mse")
+            + geom_line()
+            + theme(figure_size=(8, 8))
     )
 
     print(coefficient_plot)
