@@ -3,8 +3,6 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 
-import constants as c
-
 LOGGER = logging.getLogger(__name__)
 
 
@@ -131,10 +129,10 @@ class LinearRegressor(Regressor):
 
     def fit(self, X, y):
         LOGGER.info("[OrdinaryLeastSquares] Fitting starting")
-
-        if self.solver not in ["ols", "svd"]:
+        known_solvers = ["ols", "svd"]
+        if self.solver not in known_solvers:
             raise ValueError(
-                f"""Known methods are {c.known_methods}. Got "{self.solver}"."""
+                f"""Known solvers are {known_solvers}. Got "{self.solver}"."""
             )
         if self.solver == "ols":
             self._solve_ols(X, y)
@@ -183,14 +181,14 @@ class RidgeRegressor(Regressor):
 
     def fit(self, X, y):
         LOGGER.info("[RidgeRegressor] Fitting starting")
-        known_methods = ["svd", "sgd"]
-        if self.solver not in known_methods:
+        known_solvers = ["svd", "sgd"]
+        if self.solver not in known_solvers:
             raise ValueError(
-                f"""Known methods are {known_methods}. Got "{self.method}"."""
+                f"""Known solvers are {known_solvers}. Got "{self.solver}"."""
             )
-        if self.method == "svd":
+        if self.solver == "svd":
             self._solve_svd(X, y)
-        elif self.method == "sgd":
+        elif self.solver == "sgd":
             self._solve_sgd(X, y)
         self._calculate_constant(X, y)
         LOGGER.info("[RidgeRegressor] Fitting finished")
