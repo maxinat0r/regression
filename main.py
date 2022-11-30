@@ -40,14 +40,15 @@ def main():
     regressor_list.append(ols_model)
     svd_model = LinearRegressor(solver="svd")
     regressor_list.append(svd_model)
+    ridge_svd_model = RidgeRegressor(solver="svd", alpha=5)
+    regressor_list.append(ridge_svd_model)
 
     for model in regressor_list:
-
         model.fit(X=X_train, y=y_train)
         model.fit(X=X_train, y=y_train)
         y_hat = model.predict(X=X_test)
         mse = mean_squared_error(y_test, y_hat)
-        print(mse)
+        print(model.__class__.__name__, model.solver, mse)
 
     # result_out = pd.DataFrame()
     # for alpha in range(0, 25):

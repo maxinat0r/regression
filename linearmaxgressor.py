@@ -17,12 +17,14 @@ class Regressor(ABC):
         include_constant=True,
         n_iterations=500,
         learning_rate=0.1,
+        alpha=0,
     ):
         self.solver = solver
         self.include_constant = include_constant
         self.constant_ = None
         self.n_iterations = n_iterations
         self.learning_rate = learning_rate
+        self.alpha = alpha
 
     @staticmethod
     def learning_schedule(t):
