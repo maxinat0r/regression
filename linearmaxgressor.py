@@ -15,12 +15,12 @@ class Regressor(ABC):
 
     def __init__(
         self,
-        method="ols",
+        solver="ols",
         include_constant=True,
         n_iterations=500,
         learning_rate=0.1,
     ):
-        self.method = method
+        self.solver = solver
         self.include_constant = include_constant
         self.constant_ = None
         self.n_iterations = n_iterations
@@ -98,7 +98,7 @@ class Regressor(ABC):
 
 
 class LinearRegressor(Regressor):
-    def solve_ols(self, X, y):
+    def _solve_ols(self, X, y):
         """
         Use the normal equation to find the coefficient vector of the least-squares hyperplane.
         The normal equation is defined as:
@@ -134,18 +134,18 @@ class LinearRegressor(Regressor):
 
         if self.solver not in ["ols", "svd"]:
             raise ValueError(
-                f"""Known methods are {c.known_methods}. Got "{self.method}"."""
+                f"""Known methods are {c.known_methods}. Got "{self.solver}"."""
             )
-        if self.method == "ols":
+        if self.solver == "ols":
             self._solve_ols(X, y)
-        elif self.method == "svd":
+        elif self.solver == "svd":
             self._solve_svd(X, y)
 
-        self._calculate_constants(X, y)
+        self._calculate_constant(X, y)
         LOGGER.info("[OrdinaryLeastSquares] Fitting finished")
 
 
-class RidgeRegressor(Regressor, alpha=0):
+class RidgeRegressor(Regressor):
     """
     Linear Regression with L2 regularization, also known as Ridge.
 
@@ -192,5 +192,5 @@ class RidgeRegressor(Regressor, alpha=0):
             self._solve_svd(X, y)
         elif self.method == "sgd":
             self._solve_sgd(X, y)
-        self._calculate_constants(X, y)
+        self._calculate_constant(X, y)
         LOGGER.info("[RidgeRegressor] Fitting finished")
