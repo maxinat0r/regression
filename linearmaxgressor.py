@@ -9,6 +9,24 @@ LOGGER = logging.getLogger(__name__)
 class Regressor(ABC):
     """
     Abstract Base Class for Regressors.
+
+    This class provides a common interface for several types of regression models,
+    and defines shared methods and attributes used by these models.
+
+    Attributes:
+        solver: The solver used to fit the regression model. Can be "ols" for
+            ordinary least squares or "bgd" for batch gradient descent.
+        include_constant: A boolean indicating whether to include a constant term
+            in the regression model.
+        constant_: The constant term of the regression model.
+        n_iterations: The number of iterations to use for batch gradient descent.
+        learning_rate: The learning rate to use for batch gradient descent.
+        alpha: The regularization parameter for the regression model.
+        l1_ratio: The mixing parameter between L1 and L2 regularization.
+
+    Methods:
+        fit: Fit the regression model to data. Must be implemented by subclasses.
+        predict: Make predictions using a fitted model.
     """
 
     def __init__(
@@ -40,8 +58,16 @@ class Regressor(ABC):
 
     def _initatialize_coefficients(self, X, low=-1, high=1):
         """
-        Initialize a random coefficients for each feature by sampling
-        uniformly fromhe half-open interval [low, high) (includes low, but excludes high)
+        Initialize the coefficients of the regression model to random values.
+
+        Args:
+            X: The feature matrix.
+            low: The lower bound of the random coefficients.
+            high: The upper bound of the random coefficients.
+
+        Returns:
+            A vector of random coefficients for each feature in X,
+            sampled uniformly from the half-open interval [low, high).
         """
         n = X.shape[1]
         self.coefficients_ = np.random.uniform(low, high, n)
@@ -52,10 +78,13 @@ class Regressor(ABC):
         Loss function is Mean Squared Errors.
 
         Args:
-            n_iterations: The amount of interations used in gradient descent
-            alpha:
-        """
+            X: The feature matrix.
+            y: The target vector.
 
+        Returns:
+            The fitted coefficients of the regression model.
+        """
+        self._initatialize_coefficients(X)
         m = X.shape[0]
 
         for i in range(self.n_iterations):
@@ -66,6 +95,8 @@ class Regressor(ABC):
             # Calculate the gradient using the partial derivative of
             # the loss function (MSE) with respect to coefficients
             gradient = -2 / m * ((error) @ X) + (self.alpha * self.coefficients_)
+            gradient += (1 - self.l1_ratio) * self.alpha * self.coefficients_
+            gradient += self.l1_ratio * self.alpha
 
             # Get eta, which decreases for each iteration
             eta = self.learning_schedule(i)
@@ -147,7 +178,19 @@ class LinearRegressor(Regressor):
 
 class RidgeRegressor(Regressor):
     """
-    Linear Regression with L2 regularization, also known as Ridge.
+    Ridge Regressor.
+
+    This class fits a ridge regularized linear regression model to data using
+    either ordinary least squares or batch gradient descent. Ridge regression
+    uses L2 regularization to prevent overfitting and improve model
+    generalization.
+
+    Attributes:
+        alpha: The regularization parameter for the ridge regression model.
+
+    Methods:
+        fit: Fit the ridge regression model to data.
+        predict: Make predictions using a fitted model.
 
     This can be solved in multiple ways. This class has two options:
     (1) Singular Value Decomposition
@@ -156,16 +199,19 @@ class RidgeRegressor(Regressor):
 
     def _solve_svd(self, X, y):
         """
-         Use Singular Value Decomposition to minimize the following objective function:
-        ||y - X*Beta||^2_2 + alpha * ||Beta||^2_2
-        In words: the L2-norm  of the error plus alpha times the L2-norm of the beta coefficients.
-        The L2-norm is also known as Euclidean norm because it measures the distance
-        between vectors in terms of the Euclidean distance.
-        The L2-norm of a vector x is calculated by summing the squares of its absolute values.
+        Use Singular Value Decomposition to minimize the following objective function:
+
+            ||y - X*Beta||^2_2 + alpha * ||Beta||^2_2
+
+        where X and y are matrices, Beta is a vector of coefficients, and alpha is a scalar value.
+
+        The objective function measures the L2-norm (also known as the Euclidean norm)
+        of the error between the actual values in y and the predicted values from X and Beta,
+        plus the L2-norm of the Beta coefficients multiplied by alpha.
+
+        The L2-norm of a vector x is calculated by summing the squares of its absolute values:
         ||x||^2_2 = SUM(|x|^2)|i=1 to i=n
-        𝛽̂ =(𝑋𝑡𝑋+𝜆𝐼)−1 𝑋𝑡𝑦
-        𝑋=𝑈𝐷𝑉−1
-        𝛽̂ =𝑉(𝐷**2 + 𝜆𝐼)−1 𝐷𝑈𝑡𝑦
+
         """
         # Use Singular Value Decomposition to decompose the X
         # The returned Sigma is a vector containing only the diagonals
@@ -183,14 +229,60 @@ class RidgeRegressor(Regressor):
 
     def fit(self, X, y):
         LOGGER.info("[RidgeRegressor] Fitting starting")
-        known_solvers = ["svd", "sgd"]
+        known_solvers = ["svd", "bgd"]
         if self.solver not in known_solvers:
             raise ValueError(
                 f"""Known solvers are {known_solvers}. Got "{self.solver}"."""
             )
         if self.solver == "svd":
             self._solve_svd(X, y)
-        elif self.solver == "sgd":
-            self._solve_sgd(X, y)
+        elif self.solver == "bgd":
+            self._batch_gradient_descent(X, y)
         self._calculate_constant(X, y)
         LOGGER.info("[RidgeRegressor] Fitting finished")
+
+
+class Elasticnet(Regressor):
+    """
+    Elastic Net Regressor.
+
+    This class fits an elastic net regularized linear regression model to data
+    using either ordinary least squares or batch gradient descent.
+
+    Elastic net regression is a type of linear regression that uses both L1 and
+    L2 regularization to prevent overfitting and improve model generalization.
+    L1 regularization adds a penalty proportional to the absolute value of the
+    coefficients, while L2 regularization adds a penalty proportional to the
+    square of the coefficients. Elastic net regression uses a mixing parameter
+    l1_ratio to determine the relative weight of L1 and L2 regularization.
+    For example, if l1_ratio=0.5, the regularization penalty is a mix of L1
+    and L2 regularization with equal weight.
+
+    In general, elastic net regression can improve the performance of linear
+    regression by selecting a more parsimonious set of features and preventing
+    overfitting. It is particularly useful when there are a large number of
+    features in the data, as it can help to select a smaller subset of relevant
+    features and reduce the model complexity.
+
+    Attributes:
+        l1_ratio: The mixing parameter between L1 and L2 regularization.
+
+    Methods:
+        fit: Fit the elastic net regression model to data.
+        predict: Make predictions using a fitted model.
+    """
+
+    def __init__(self, l1_ratio=0.5, **kwargs):
+        super().__init__(**kwargs)
+        self.l1_ratio = l1_ratio
+
+    def fit(self, X, y):
+        if self.solver == "ols":
+            self._solve_ols(X, y)
+        elif self.solver == "bgd":
+            self._solve_bgd(X, y)
+        else:
+            raise ValueError(f"Unknown solver: {self.solver}")
+
+        if self.include_constant:
+            self._calculate_constant(X, y)

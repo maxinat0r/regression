@@ -2,7 +2,7 @@ import logging
 import os
 
 import pandas as pd
-from plotnine import aes, facet_grid, geom_line, ggplot, labs, scales, theme
+
 
 import constants as c
 from linearmaxgressor import *
@@ -42,6 +42,8 @@ def main():
     regressor_list.append(svd_model)
     ridge_svd_model = RidgeRegressor(solver="svd", alpha=5)
     regressor_list.append(ridge_svd_model)
+    ridge_bgd_model = RidgeRegressor(solver="bgd", alpha=5)
+    regressor_list.append(ridge_bgd_model)
 
     for model in regressor_list:
         model.fit(X=X_train, y=y_train)
@@ -50,49 +52,20 @@ def main():
         mse = mean_squared_error(y_test, y_hat)
         print(model.__class__.__name__, model.solver, mse)
 
-    # result_out = pd.DataFrame()
-    # for alpha in range(0, 25):
-    #     model = LinearMaxregressor(method="gradient_descent", alpha=alpha)
-    #     model.fit(X=X_train, y=y_train)
-    #     y_hat = model.predict(X=X_test)
-    #     mse = mean_squared_error(y_test, y_hat)
-    #     result = pd.DataFrame(model.coefficients_).T
-    #     result["mse"] = mse
-    #     result["alpha"] = alpha
-    #     result_out = pd.concat([result_out, result], ignore_index=True)
-    #
-    # coefficient_df = pd.melt(
-    #     result_out,
-    #     id_vars=["alpha"],
-    #     value_vars=["mse"],
-    #     var_name="feature",
-    #     value_name="coefficient",
-    # )
-    #
-    # coefficient_plot = (
-    #         ggplot(coefficient_df)
-    #         + aes(x="alpha", y="coefficient", colour="feature")
-    #         + geom_line()
-    #         + theme(legend_position="top", figure_size=(10, 12))
-    # )
-    #
-    # mse_df = pd.melt(
-    #     result_out,
-    #     id_vars=["alpha"],
-    #     value_vars=["mse"],
-    #     var_name="feature",
-    #     value_name="mse",
-    # )
-    #
-    # mse_plot = (
-    #         ggplot(mse_df)
-    #         + aes(x="alpha", y="mse")
-    #         + geom_line()
-    #         + theme(figure_size=(8, 8))
-    # )
-    #
-    # print(coefficient_plot)
-    # print(mse_plot)
+    result_out = pd.DataFrame()
+    for alpha in range(0, 200, 10):
+        ridge_svd_model = RidgeRegressor(solver="svd", alpha=alpha)
+        ridge_svd_model.fit(X=X_train, y=y_train, )
+        y_hat = ridge_svd_model.predict(X=X_test)
+        mse = mean_squared_error(y_test, y_hat)
+        result = pd.DataFrame(model.coefficients_).T
+        result["mse"] = mse
+        result["alpha"] = alpha
+        result_out = pd.concat([result_out, result], ignore_index=True)
+
+
+
+
 
 
 if __name__ == "__main__":
